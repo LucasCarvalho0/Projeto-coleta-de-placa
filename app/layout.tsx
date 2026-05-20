@@ -17,6 +17,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'Nissan Scan',
   },
+};
+
+export const viewport: Viewport = {
   themeColor: '#0f172a',
 };
 
