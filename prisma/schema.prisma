@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Operator {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  matricula String   @unique
+  senha     String
+  createdAt DateTime @default(now()) @map("created_at")
+  scans     Scan[]
+
+  @@map("operators")
+}
+
+model Scan {
+  id         Int      @id @default(autoincrement())
+  tipo       String   @default("ETIQUETA") // "ETIQUETA" ou "CRLV"
+  placa      String   @unique
+  chassi     String   @unique
+  renavam    String?
+  operador   Operator @relation(fields: [operadorId], references: [id])
+  operadorId Int      @map("operador_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("scans")
+}
