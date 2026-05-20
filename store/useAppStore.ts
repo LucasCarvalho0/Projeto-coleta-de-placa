@@ -20,10 +20,10 @@ interface AppStore {
   currentPlaca: string;
   currentChassi: string;
   currentRenavam: string;
-  
+
   // Histórico em Tempo Real (UI)
   recentScans: ScanRecord[];
-  
+
   // Estatísticas
   stats: {
     total: number;
@@ -31,6 +31,10 @@ interface AppStore {
     operador: number;
     dia: number;
   };
+
+  // Estado de importação
+  importing: boolean;
+  base: Record<string, any>;
 
   // Ações
   setCurrentPlaca: (placa: string) => void;
@@ -40,6 +44,8 @@ interface AppStore {
   setStats: (stats: any) => void;
   resetCurrent: () => void;
   loadInitialData: () => Promise<void>;
+  setImporting: (value: boolean) => void;
+  setBase: (base: Record<string, any>) => void;
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -54,15 +60,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
     total: 0,
     duplicados: 0,
     operador: 0,
-    dia: 0
+    dia: 0,
   },
+
+  // Estado de importação
+  importing: false,
+  base: {},
 
   setCurrentPlaca: (placa) => set({ currentPlaca: placa }),
   setCurrentChassi: (chassi) => set({ currentChassi: chassi }),
   setCurrentRenavam: (renavam) => set({ currentRenavam: renavam }),
 
   addRecentScan: (scan) => {
-    const newList = [scan, ...get().recentScans].slice(0, 50); // Manter os últimos 50
+    const newList = [scan, ...get().recentScans].slice(0, 50);
     set({ recentScans: newList });
   },
 
@@ -75,13 +85,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const res = await fetch('/api/scans?limit=10');
       if (res.ok) {
         const data = await res.json();
-        set({ 
+        set({
           recentScans: data.scans,
-          stats: data.stats
+          stats: data.stats,
         });
       }
     } catch (error) {
       console.error('Erro ao carregar dados iniciais:', error);
     }
-  }
+  },
+
+  setImporting: (value) => set({ importing: value }),
+  setBase: (base) => set({ base }),
 }));

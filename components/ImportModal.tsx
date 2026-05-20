@@ -38,7 +38,8 @@ export function ImportModal({ open, onClose }: ImportModalProps) {
   const [step, setStep] = useState<Step>('UPLOAD');
   const [isLoading, setIsLoading] = useState(false);
   const [sources, setSources] = useState<PendingSource[]>([]);
-  const { setBase, setImporting } = useAppStore();
+  const setBase = useAppStore(state => state.setBase);
+  const setImporting = useAppStore(state => state.setImporting);
 
   // Resetar ao fechar
   const handleClose = useCallback(() => {

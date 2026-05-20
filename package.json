@@ -30,7 +30,11 @@
     "tailwind-merge": "^3.6.0",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3",
-    "zustand": "^5.0.0"
+    "zustand": "^5.0.0",
+    "uuid": "^9.0.0",
+    "rimraf": "^6.1.3",
+    "glob": "^10.4.0",
+    "promise-inflight": "^1.0.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -44,5 +48,13 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3"
+  },
+  "overrides": {
+    "rimraf": "^6.1.3",
+    "uuid": "^9.0.0",
+    "glob": "^10.4.0",
+    "inflight": "npm:promise-inflight@^1.0.1",
+    "fstream": "npm:fs-extra@^11.2.0",
+    "lodash.isequal": "npm:deep-equal@^2.2.3"
   }
 }
