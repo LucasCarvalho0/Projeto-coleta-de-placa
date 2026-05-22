@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import CurrentDate from '../components/CurrentDate';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useAppStore } from '@/store/useAppStore';
 import { Header } from '@/components/Header';
 import { Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading: authLoading } = useAuthStore();
@@ -56,7 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <span>ESTAÇÃO: {user.matricula}</span>
         </div>
         <div>
-          V1.0.0 · NISSAN LOGISTICS · {new Date().toLocaleDateString('pt-BR')}
+          <CurrentDate />
         </div>
       </footer>
     </div>

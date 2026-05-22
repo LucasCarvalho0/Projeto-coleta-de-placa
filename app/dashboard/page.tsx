@@ -41,6 +41,17 @@ export default function DashboardPortalPage() {
         </p>
       </div>
 
+      <div className="flex items-center justify-center gap-4 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg text-white max-w-lg mx-auto my-6">
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M9 12V4h2v8h3l-4 4-4-4h3z"/>
+          <path d="M5 16h10v2H5v-2z"/>
+        </svg>
+        <span className="font-semibold text-lg">
+          📲 <strong>Baixe o app Nissan‑Scan</strong> e comece a coletar placas e chassi em segundos!
+        </span>
+        <a href="/download/nissan-scan-installer.exe" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md transition-colors" download>Download</a>
+      </div>
+
       {/* Selector Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
         {/* Etiqueta Card */}
