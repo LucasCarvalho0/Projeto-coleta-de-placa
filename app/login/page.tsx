@@ -15,7 +15,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      router.push('/');
+      router.push('/dashboard');
     }
   }, [user, router]);
 
@@ -39,7 +39,7 @@ export default function LoginPage() {
       if (res.ok) {
         setUser(data.user);
         toast.success(`Bem-vindo, ${data.user.nome}!`);
-        router.push('/');
+        router.push('/dashboard');
       } else {
         toast.error(data.error || 'Erro ao fazer login');
       }

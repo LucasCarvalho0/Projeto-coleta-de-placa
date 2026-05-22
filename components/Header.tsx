@@ -11,7 +11,7 @@ export function Header() {
   const pathname = usePathname();
 
   const navItems = [
-    { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Histórico', href: '/history', icon: History },
   ];
 
@@ -31,21 +31,24 @@ export function Header() {
 
         {/* Nav */}
         <nav className="hidden md:flex items-center gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`
-                flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-widest transition-all
-                ${pathname === item.href 
-                  ? 'bg-blue-600/10 text-blue-400' 
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'}
-              `}
-            >
-              <item.icon size={16} />
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (item.href === '/dashboard' && pathname.startsWith('/dashboard'));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`
+                  flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-widest transition-all
+                  ${isActive 
+                    ? 'bg-blue-600/10 text-blue-400' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'}
+                `}
+              >
+                <item.icon size={16} />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
       </div>
 

@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
 
   // Se houver sessão e tentar acessar login
   if (session && pathname === '/login') {
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();

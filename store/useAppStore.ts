@@ -20,6 +20,7 @@ interface AppStore {
   currentPlaca: string;
   currentChassi: string;
   currentRenavam: string;
+  currentMarca: string;
 
   // Histórico em Tempo Real (UI)
   recentScans: ScanRecord[];
@@ -40,6 +41,7 @@ interface AppStore {
   setCurrentPlaca: (placa: string) => void;
   setCurrentChassi: (chassi: string) => void;
   setCurrentRenavam: (renavam: string) => void;
+  setCurrentMarca: (marca: string) => void;
   addRecentScan: (scan: ScanRecord) => void;
   setStats: (stats: any) => void;
   resetCurrent: () => void;
@@ -55,6 +57,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   currentPlaca: '',
   currentChassi: '',
   currentRenavam: '',
+  currentMarca: '',
   recentScans: [],
   stats: {
     total: 0,
@@ -70,6 +73,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setCurrentPlaca: (placa) => set({ currentPlaca: placa }),
   setCurrentChassi: (chassi) => set({ currentChassi: chassi }),
   setCurrentRenavam: (renavam) => set({ currentRenavam: renavam }),
+  setCurrentMarca: (marca) => set({ currentMarca: marca }),
 
   addRecentScan: (scan) => {
     const newList = [scan, ...get().recentScans].slice(0, 50);
@@ -78,7 +82,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setStats: (stats) => set({ stats: { ...get().stats, ...stats } }),
 
-  resetCurrent: () => set({ currentPlaca: '', currentChassi: '', currentRenavam: '' }),
+  resetCurrent: () => set({ currentPlaca: '', currentChassi: '', currentRenavam: '', currentMarca: '' }),
 
   loadInitialData: async () => {
     try {

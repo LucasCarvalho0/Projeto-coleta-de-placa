@@ -97,16 +97,21 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
-
-    const scans = await prisma.scan.findMany({
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        operador: {
-          select: { nome: true }
-        }
-      }
-    });
+    const chassiQuery = searchParams.get('chassi');
+let scansData: any[] = [];
+    if (chassiQuery) {
+      const scan = await prisma.scan.findFirst({
+        where: { chassi: chassiQuery },
+        include: { operador: { select: { nome: true } } },
+      });
+      scansData = scan ? [scan] : [];
+    } else {
+      scansData = await prisma.scan.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: { operador: { select: { nome: true } } }
+      });
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -118,7 +123,7 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({
-      scans: scans.map((s: any) => ({
+      scans: scansData.map((s: any) => ({
         id: s.id,
         placa: s.placa,
         chassi: s.chassi,

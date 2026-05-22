@@ -15,7 +15,8 @@ export function ScannerInput() {
     scanMode, setScanMode,
     currentPlaca, currentChassi, currentRenavam,
     setCurrentPlaca, setCurrentChassi, setCurrentRenavam,
-    resetCurrent, addRecentScan, setStats
+    resetCurrent, addRecentScan, setStats,
+    base
   } = useAppStore();
 
   // Foco automático e contínuo
@@ -98,12 +99,37 @@ export function ScannerInput() {
         setCurrentPlaca(resultado.placa);
         foundSomething = true;
       }
+
+      // Auto-preenche o chassi a partir da base importada se houver correspondência com a placa
+      if (scanMode === 'ETIQUETA' && base && Object.keys(base).length > 0) {
+        const placaUpper = resultado.placa.toUpperCase();
+        const vehicle = Object.values(base).find(
+          (v: any) => v.placa && v.placa.toUpperCase() === placaUpper
+        );
+        if (vehicle && vehicle.vin && currentChassi !== vehicle.vin) {
+          setCurrentChassi(vehicle.vin);
+          foundSomething = true;
+          toast.success(`Chassi encontrado na base: ${vehicle.vin}`);
+        }
+      }
     }
 
     if (resultado.chassi) {
       if (currentChassi !== resultado.chassi) {
         setCurrentChassi(resultado.chassi);
         foundSomething = true;
+      }
+
+      // Auto-preenche a placa a partir da base importada se houver correspondência com o chassi
+      if (scanMode === 'ETIQUETA' && base && Object.keys(base).length > 0) {
+        const vehicle = base[resultado.chassi];
+        if (vehicle && vehicle.placa && vehicle.placa !== '-') {
+          if (currentPlaca !== vehicle.placa) {
+            setCurrentPlaca(vehicle.placa);
+            foundSomething = true;
+            toast.success(`Placa auto-preenchida: ${vehicle.placa}`);
+          }
+        }
       }
     }
 

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
+import Head from 'next/head';
 import { AuthInitializer } from '../components/AuthInitializer';
 
 import { PWAInstallPrompt } from '../components/PWAInstallPrompt';
@@ -26,6 +27,9 @@ export const viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className="dark">
+      <Head>
+        <link rel="icon" href="/icon.png" />
+      </Head>
       <body className={`${inter.className} antialiased bg-slate-950 text-slate-50`}>
         <AuthInitializer />
         <PWAInstallPrompt />
