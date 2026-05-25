@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import NavBar from './components/NavBar';
 import { AuthInitializer } from '@/components/AuthInitializer';
+import InstallPWA from '@/components/InstallPWA';
 import { getSession } from '@/lib/auth';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -42,6 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className={`${inter.className} antialiased bg-slate-950 text-slate-50 min-h-screen`} suppressHydrationWarning>
         <AuthInitializer />
+        <InstallPWA />
         {session && <NavBar operatorName={session.matricula} />}
         <main className={session ? 'pt-0' : ''}>
           {children}
