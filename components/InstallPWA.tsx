@@ -36,11 +36,13 @@ export default function InstallPWA() {
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      const dismissed = localStorage.getItem('pwa-install-dismissed');
-      if (!dismissed) {
-        setShowBanner(true);
-      }
     };
+
+    const dismissed = localStorage.getItem('pwa-install-dismissed');
+    if (!dismissed) {
+      // Mostra o banner após 1 segundo para dar tempo de carregar a página
+      setTimeout(() => setShowBanner(true), 1000);
+    }
 
     window.addEventListener('beforeinstallprompt', handler);
 
@@ -65,6 +67,9 @@ export default function InstallPWA() {
         setIsInstalled(true);
       }
       setDeferredPrompt(null);
+    } else {
+      // Se não houver prompt nativo disponível, avisa o usuário (ex: desktop sem flag ou já em processamento)
+      alert('Para instalar o aplicativo, clique no ícone de instalação na barra de endereços do seu navegador, ou acesse as opções do navegador e clique em "Instalar Aplicativo".');
     }
   };
 
