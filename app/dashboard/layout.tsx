@@ -1,10 +1,9 @@
 'use client';
 
-import CurrentDate from '../components/CurrentDate';
+import CurrentDate from '@/components/CurrentDate';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useAppStore } from '@/store/useAppStore';
-import { Header } from '@/components/Header';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -35,13 +34,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col relative overflow-hidden">
-      {/* Background Decor */}
+
       <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full blur-[140px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600 rounded-full blur-[140px]" />
       </div>
-
-      <Header />
 
       <main className="flex-1 relative z-10 w-full">
         {children}

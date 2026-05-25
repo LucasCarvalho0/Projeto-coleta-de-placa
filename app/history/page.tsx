@@ -1,228 +1,259 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
-import { 
-  Search, FileSpreadsheet, Filter, 
-  ChevronLeft, ChevronRight, Loader2,
-  Calendar, User, Scan, Hash
-} from 'lucide-react';
+import { History, Search, FileSpreadsheet, X, Filter, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+interface Scan {
+  id: number;
+  tipo: string;
+  placa: string;
+  chassi: string;
+  modelo?: string;
+  cor?: string;
+  createdAt: string;
+  operador: { nome: string; matricula: string };
+}
+
 export default function HistoryPage() {
-  const { user, isLoading: authLoading } = useAuthStore();
   const router = useRouter();
-  
-  const [scans, setScans] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
+  const [scans, setScans] = useState<Scan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   // Filtros
-  const [filterPlaca, setFilterPlaca] = useState('');
-  const [filterChassi, setFilterChassi] = useState('');
-  const [filterOperador, setFilterOperador] = useState('');
-  const [filterData, setFilterData] = useState('');
+  const [placa, setPlaca] = useState('');
+  const [chassi, setChassi] = useState('');
+  const [operador, setOperador] = useState('');
+  const [dataInicio, setDataInicio] = useState('');
+  const [dataFim, setDataFim] = useState('');
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
-
-  const fetchScans = async () => {
-    setIsLoading(true);
+  const fetchScans = useCallback(async () => {
+    setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filterPlaca) params.append('placa', filterPlaca);
-      if (filterChassi) params.append('chassi', filterChassi);
-      if (filterOperador) params.append('operador', filterOperador);
-      if (filterData) params.append('data', filterData);
+      if (placa) params.set('placa', placa);
+      if (chassi) params.set('chassi', chassi);
+      if (operador) params.set('operador', operador);
+      if (dataInicio) params.set('dataInicio', dataInicio);
+      if (dataFim) params.set('dataFim', dataFim);
 
       const res = await fetch(`/api/scans?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setScans(data.scans);
-      }
-    } catch (error) {
-      toast.error('Erro ao carregar histórico');
+      if (!res.ok) throw new Error('Erro ao buscar coletas');
+      const data = await res.json();
+      setScans(data.scans || []);
+    } catch {
+      toast.error('Erro ao carregar histórico.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
+  }, [placa, chassi, operador, dataInicio, dataFim]);
 
   useEffect(() => {
-    if (user) {
-      fetchScans();
-    }
-  }, [user]);
+    fetchScans();
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchScans();
+  };
+
+  const handleClearFilters = () => {
+    setPlaca('');
+    setChassi('');
+    setOperador('');
+    setDataInicio('');
+    setDataFim('');
+    setTimeout(fetchScans, 0);
+  };
 
   const handleExport = async () => {
-    setIsExporting(true);
+    setExporting(true);
     try {
       const params = new URLSearchParams();
-      if (filterPlaca) params.append('placa', filterPlaca);
-      if (filterChassi) params.append('chassi', filterChassi);
-      if (filterOperador) params.append('operador', filterOperador);
-      if (filterData) params.append('data', filterData);
-
+      if (dataInicio) params.set('dataInicio', dataInicio);
+      if (dataFim) params.set('dataFim', dataFim);
       const res = await fetch(`/api/export?${params.toString()}`);
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `coletas_${new Date().toISOString().split('T')[0]}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        toast.success('Excel gerado com sucesso!');
-      } else {
-        toast.error('Erro ao exportar Excel');
-      }
-    } catch (error) {
-      toast.error('Erro na exportação');
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const hoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+      a.href = url;
+      a.download = `coletas_${hoje}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Planilha exportada com sucesso!');
+    } catch {
+      toast.error('Erro ao exportar.');
     } finally {
-      setIsExporting(false);
+      setExporting(false);
     }
   };
 
-  if (authLoading || !user) return null;
+  function formatDateTime(iso: string) {
+    const d = new Date(iso);
+    return {
+      data: d.toLocaleDateString('pt-BR'),
+      hora: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    };
+  }
+
+  function tipoBadge(tipo: string) {
+    if (tipo === 'CRLV') return 'bg-blue-600/20 text-blue-300 border border-blue-600/30';
+    if (tipo === 'MANUAL') return 'bg-yellow-600/20 text-yellow-300 border border-yellow-600/30';
+    return 'bg-slate-700 text-slate-300 border border-slate-600';
+  }
+
+  const hasFilters = placa || chassi || operador || dataInicio || dataFim;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex flex-col">
-      <Header />
-
-      <div className="flex-1 px-8 py-8 space-y-6 max-w-[1600px] mx-auto w-full">
-        {/* Top Actions */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-slate-400 hover:text-white transition-colors">
+            <ArrowLeft size={20} />
+          </button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Histórico de Coletas</h1>
-            <p className="text-slate-500 text-sm font-mono mt-1 uppercase tracking-widest">Consulta e auditoria de registros</p>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <History size={24} className="text-purple-400" />
+              Histórico de Coletas
+            </h1>
+            <p className="text-slate-400 text-sm mt-0.5">
+              {loading ? 'Carregando...' : `${scans.length} registro${scans.length !== 1 ? 's' : ''} encontrado${scans.length !== 1 ? 's' : ''}`}
+            </p>
           </div>
-          <button
-            onClick={handleExport}
-            disabled={isExporting || isLoading}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl flex items-center gap-2 font-bold shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50"
-          >
-            {isExporting ? <Loader2 size={20} className="animate-spin" /> : <FileSpreadsheet size={20} />}
-            EXPORTAR EXCEL
-          </button>
         </div>
+        <button
+          id="btn-exportar"
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center gap-2 bg-green-700 hover:bg-green-600 disabled:opacity-60 text-white font-semibold px-4 py-2.5 rounded-xl transition-all text-sm"
+        >
+          <FileSpreadsheet size={16} />
+          {exporting ? 'Exportando...' : 'Exportar Excel'}
+        </button>
+      </div>
 
-        {/* Filters Bar */}
-        <div className="bg-slate-900/40 backdrop-blur-sm border border-white/5 p-6 rounded-3xl shadow-xl grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
-          <div className="space-y-2">
-            <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <Scan size={12} /> Placa
-            </label>
-            <input
-              type="text"
-              value={filterPlaca}
-              onChange={(e) => setFilterPlaca(e.target.value.toUpperCase())}
-              placeholder="ABC1D23"
-              className="w-full bg-slate-800/50 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <Hash size={12} /> Chassi
-            </label>
-            <input
-              type="text"
-              value={filterChassi}
-              onChange={(e) => setFilterChassi(e.target.value.toUpperCase())}
-              placeholder="VIN / 17 Chars"
-              className="w-full bg-slate-800/50 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <User size={12} /> Operador
-            </label>
-            <input
-              type="text"
-              value={filterOperador}
-              onChange={(e) => setFilterOperador(e.target.value)}
-              placeholder="Nome do operador"
-              className="w-full bg-slate-800/50 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest flex items-center gap-2">
-              <Calendar size={12} /> Data
-            </label>
-            <input
-              type="date"
-              value={filterData}
-              onChange={(e) => setFilterData(e.target.value)}
-              className="w-full bg-slate-800/50 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all [color-scheme:dark]"
-            />
-          </div>
-          <button
-            onClick={fetchScans}
-            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 font-bold transition-all"
-          >
-            <Filter size={18} />
-            FILTRAR
-          </button>
+      {/* Filtros */}
+      <form onSubmit={handleSearch} className="bg-slate-900 border border-slate-700/50 rounded-2xl p-5 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter size={15} className="text-slate-400" />
+          <span className="text-sm font-medium text-slate-300">Filtros</span>
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="ml-auto flex items-center gap-1 text-xs text-slate-500 hover:text-red-400 transition-colors"
+            >
+              <X size={12} />
+              Limpar filtros
+            </button>
+          )}
         </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <input
+            type="text"
+            placeholder="Placa"
+            value={placa}
+            onChange={(e) => setPlaca(e.target.value.toUpperCase())}
+            className="bg-slate-800 border border-slate-600 text-white placeholder-slate-500 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40 font-mono"
+          />
+          <input
+            type="text"
+            placeholder="Chassi"
+            value={chassi}
+            onChange={(e) => setChassi(e.target.value.toUpperCase())}
+            className="bg-slate-800 border border-slate-600 text-white placeholder-slate-500 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40 font-mono"
+          />
+          <input
+            type="text"
+            placeholder="Operador"
+            value={operador}
+            onChange={(e) => setOperador(e.target.value)}
+            className="bg-slate-800 border border-slate-600 text-white placeholder-slate-500 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
+          />
+          <input
+            type="date"
+            value={dataInicio}
+            onChange={(e) => setDataInicio(e.target.value)}
+            className="bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
+            title="Data início"
+          />
+          <input
+            type="date"
+            value={dataFim}
+            onChange={(e) => setDataFim(e.target.value)}
+            className="bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
+            title="Data fim"
+          />
+        </div>
+        <button
+          type="submit"
+          id="btn-buscar"
+          className="mt-3 flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-2 rounded-xl text-sm transition-all"
+        >
+          <Search size={15} />
+          Buscar
+        </button>
+      </form>
 
-        {/* Results Table */}
-        <div className="bg-slate-900/40 backdrop-blur-sm border border-white/5 rounded-3xl shadow-xl overflow-hidden">
+      {/* Tabela */}
+      {loading ? (
+        <div className="text-center py-20">
+          <div className="w-10 h-10 border-2 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-slate-400">Carregando coletas...</p>
+        </div>
+      ) : scans.length === 0 ? (
+        <div className="text-center py-20 bg-slate-900 border border-slate-700/50 rounded-2xl">
+          <History size={40} className="text-slate-600 mx-auto mb-3" />
+          <p className="text-slate-400 font-medium">Nenhuma coleta encontrada</p>
+          {hasFilters && <p className="text-slate-600 text-sm mt-1">Tente remover os filtros</p>}
+        </div>
+      ) : (
+        <div className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="bg-white/5">
-                  <th className="px-6 py-4 text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em]">Data / Hora</th>
-                  <th className="px-6 py-4 text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em]">Placa</th>
-                  <th className="px-6 py-4 text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em]">Chassi</th>
-                  <th className="px-6 py-4 text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em]">Operador</th>
-                  <th className="px-6 py-4 text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] text-center">Status</th>
+                <tr className="border-b border-slate-700/50">
+                  <th className="text-left text-slate-400 font-medium px-4 py-3">Data</th>
+                  <th className="text-left text-slate-400 font-medium px-4 py-3">Hora</th>
+                  <th className="text-left text-slate-400 font-medium px-4 py-3">Operador</th>
+                  <th className="text-left text-slate-400 font-medium px-4 py-3">Placa</th>
+                  <th className="text-left text-slate-400 font-medium px-4 py-3">Chassi (VIN)</th>
+                  <th className="text-left text-slate-400 font-medium px-4 py-3">Tipo</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-20 text-center">
-                      <Loader2 size={32} className="text-blue-500 animate-spin mx-auto mb-4" />
-                      <p className="text-slate-500 font-mono text-xs uppercase tracking-widest">Buscando registros...</p>
-                    </td>
-                  </tr>
-                ) : scans.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-20 text-center">
-                      <Search size={32} className="text-slate-700 mx-auto mb-4" />
-                      <p className="text-slate-500 font-mono text-xs uppercase tracking-widest">Nenhum registro encontrado</p>
-                    </td>
-                  </tr>
-                ) : (
-                  scans.map((scan) => (
-                    <tr key={scan.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 text-xs font-mono text-blue-400">
-                        {new Date(scan.createdAt).toLocaleString('pt-BR')}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-mono font-bold tracking-wider text-white">{scan.placa}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-xs font-mono text-slate-400">{scan.chassi}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-xs font-mono text-slate-300">{scan.operadorNome}</span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold rounded-md">OK</span>
+              <tbody>
+                {scans.map((scan, i) => {
+                  const { data, hora } = formatDateTime(scan.createdAt);
+                  return (
+                    <tr
+                      key={scan.id}
+                      className={`border-b border-slate-800/50 hover:bg-slate-800/50 transition-colors ${
+                        i % 2 === 0 ? '' : 'bg-slate-800/20'
+                      }`}
+                    >
+                      <td className="px-4 py-3 text-slate-300">{data}</td>
+                      <td className="px-4 py-3 text-slate-300 font-mono">{hora}</td>
+                      <td className="px-4 py-3 text-slate-200">{scan.operador.nome}</td>
+                      <td className="px-4 py-3 font-mono font-bold text-white tracking-widest">{scan.placa}</td>
+                      <td className="px-4 py-3 font-mono text-slate-300 text-xs">{scan.chassi}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tipoBadge(scan.tipo)}`}>
+                          {scan.tipo}
+                        </span>
                       </td>
                     </tr>
-                  ))
-                )}
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
-      </div>
-    </main>
+      )}
+    </div>
   );
 }

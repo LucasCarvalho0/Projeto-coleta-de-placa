@@ -3,17 +3,9 @@ import { cookies } from 'next/headers';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'industrial-scan-secret-key-123';
 
-export async function createSession(userId: number, matricula: string) {
+export async function createSession(userId: number, matricula: string): Promise<string> {
   const token = jwt.sign({ userId, matricula }, JWT_SECRET, { expiresIn: '1d' });
-  const cookieStore = await cookies();
-  
-  cookieStore.set('session', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24, // 1 day
-  });
+  return token;
 }
 
 export async function getSession() {

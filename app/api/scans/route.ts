@@ -1,140 +1,87 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 
-export async function POST(request: Request) {
-  try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-    }
+// GET /api/scans?placa=&chassi=&operador=&dataInicio=&dataFim=
+export async function GET(request: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const { placa, chassi, tipo = 'ETIQUETA', renavam } = await request.json();
+  const { searchParams } = new URL(request.url);
+  const placa = searchParams.get('placa') || '';
+  const chassi = searchParams.get('chassi') || '';
+  const operador = searchParams.get('operador') || '';
+  const dataInicio = searchParams.get('dataInicio');
+  const dataFim = searchParams.get('dataFim');
+
+  const where: any = {};
+  if (placa) where.placa = { contains: placa.toUpperCase(), mode: 'insensitive' };
+  if (chassi) where.chassi = { contains: chassi.toUpperCase(), mode: 'insensitive' };
+  if (operador) where.operador = { nome: { contains: operador, mode: 'insensitive' } };
+  if (dataInicio || dataFim) {
+    where.createdAt = {};
+    if (dataInicio) where.createdAt.gte = new Date(dataInicio);
+    if (dataFim) {
+      const fim = new Date(dataFim);
+      fim.setHours(23, 59, 59, 999);
+      where.createdAt.lte = fim;
+    }
+  }
+
+  const scans = await prisma.scan.findMany({
+    where,
+    include: { operador: { select: { nome: true, matricula: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: 500,
+  });
+
+  return NextResponse.json({ scans });
+}
+
+// POST /api/scans
+export async function POST(request: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+
+  try {
+    const { tipo = 'ETIQUETA', placa, chassi, modelo, cor, empresa, renavam } = await request.json();
 
     if (!placa || !chassi) {
-      return NextResponse.json(
-        { error: 'Placa e Chassi são obrigatórios' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Placa e chassi são obrigatórios' }, { status: 400 });
     }
 
-    // Verificar duplicidade de placa
-    const existingPlaca = await prisma.scan.findUnique({
-      where: { placa },
+    const placaUpper = placa.toUpperCase().trim();
+    const chassiUpper = chassi.toUpperCase().trim();
+
+    // Anti-duplicidade: mesma placa no mesmo dia
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const existente = await prisma.scan.findFirst({
+      where: { placa: placaUpper, createdAt: { gte: hoje } },
     });
-    if (existingPlaca) {
+    if (existente) {
       return NextResponse.json(
-        { error: 'Placa já coletada', type: 'DUPLICATE_PLACA' },
+        { error: `Placa ${placaUpper} já foi coletada hoje.`, duplicado: true },
         { status: 409 }
       );
     }
 
-    // Verificar duplicidade de chassi
-    const existingChassi = await prisma.scan.findUnique({
-      where: { chassi },
-    });
-    if (existingChassi) {
-      return NextResponse.json(
-        { error: 'Chassi já coletado', type: 'DUPLICATE_CHASSI' },
-        { status: 409 }
-      );
-    }
-
-    // Salvar coleta
     const scan = await prisma.scan.create({
       data: {
-        placa,
-        chassi,
         tipo,
+        placa: placaUpper,
+        chassi: chassiUpper,
+        modelo: modelo || null,
+        cor: cor || null,
+        empresa: empresa || null,
         renavam: renavam || null,
         operadorId: session.userId,
       },
-      include: {
-        operador: {
-          select: { nome: true }
-        }
-      }
     });
 
-    // Calcular estatísticas atualizadas
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const [total, dia, operador] = await Promise.all([
-      prisma.scan.count(),
-      prisma.scan.count({ where: { createdAt: { gte: today } } }),
-      prisma.scan.count({ where: { operadorId: session.userId } }),
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      scan: {
-        id: scan.id,
-        placa: scan.placa,
-        chassi: scan.chassi,
-        operadorNome: scan.operador.nome,
-        createdAt: scan.createdAt,
-        status: 'SUCCESS'
-      },
-      stats: { total, dia, operador }
-    });
-
+    return NextResponse.json({ success: true, scan }, { status: 201 });
   } catch (error: any) {
-    console.error('Erro ao salvar coleta:', error);
-    return NextResponse.json(
-      { error: 'Erro ao salvar no banco de dados' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET(request: Request) {
-  try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const chassiQuery = searchParams.get('chassi');
-let scansData: any[] = [];
-    if (chassiQuery) {
-      const scan = await prisma.scan.findFirst({
-        where: { chassi: chassiQuery },
-        include: { operador: { select: { nome: true } } },
-      });
-      scansData = scan ? [scan] : [];
-    } else {
-      scansData = await prisma.scan.findMany({
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: { operador: { select: { nome: true } } }
-      });
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const [total, dia, operador] = await Promise.all([
-      prisma.scan.count(),
-      prisma.scan.count({ where: { createdAt: { gte: today } } }),
-      prisma.scan.count({ where: { operadorId: session.userId } }),
-    ]);
-
-    return NextResponse.json({
-      scans: scansData.map((s: any) => ({
-        id: s.id,
-        placa: s.placa,
-        chassi: s.chassi,
-        operadorNome: s.operador.nome,
-        createdAt: s.createdAt,
-        status: 'SUCCESS'
-      })),
-      stats: { total, dia, operador }
-    });
-
-  } catch (error) {
-    return NextResponse.json({ error: 'Erro ao buscar coletas' }, { status: 500 });
+    console.error('Erro ao criar scan:', error);
+    return NextResponse.json({ error: 'Erro interno ao gravar coleta.' }, { status: 500 });
   }
 }

@@ -37,3 +37,4 @@ Thumbs.db
 /app/generated/prisma
 
 .vercel
+node_modules_backup/

@@ -1,12 +1,16 @@
 {
-  "name": "Nissan Scan",
-  "short_name": "NissanScan",
-  "description": "Sistema de Coleta e Auditoria Industrial Nissan",
-  "start_url": "/",
+  "name": "Nissan Scan - Sistema de Coleta",
+  "short_name": "Nissan Scan",
+  "description": "Sistema de Coleta e Auditoria Industrial de Placas e VIN - Nissan",
+  "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -25,6 +29,26 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Leitura Código de Barras",
+      "short_name": "Cód. Barras",
+      "url": "/collector",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Leitura QR Code CRLV",
+      "short_name": "QR Code",
+      "url": "/dashboard/crlv",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Histórico de Coletas",
+      "short_name": "Histórico",
+      "url": "/history",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

@@ -11,6 +11,7 @@ model Operator {
   nome      String
   matricula String   @unique
   senha     String
+  ativo     Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
   scans     Scan[]
 
@@ -20,8 +21,11 @@ model Operator {
 model Scan {
   id         Int      @id @default(autoincrement())
   tipo       String   @default("ETIQUETA") // "ETIQUETA" ou "CRLV"
-  placa      String   @unique
-  chassi     String   @unique
+  placa      String
+  chassi     String
+  modelo     String?
+  cor        String?
+  empresa    String?
   renavam    String?
   operador   Operator @relation(fields: [operadorId], references: [id])
   operadorId Int      @map("operador_id")
