@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { ScanBarcode, QrCode, Clock, Car, Hash, User2, TrendingUp } from 'lucide-react';
+import { ScanBarcode, QrCode, Clock, Car, Hash, User2, TrendingUp, Database } from 'lucide-react';
 
 interface DashboardClientProps {
   totalHoje: number;
+  totalGeral: number;
   ultimaPlaca: string | null;
   ultimoChassi: string | null;
   operadorNome: string;
@@ -24,6 +25,7 @@ function formatDate() {
 
 export default function DashboardClient({
   totalHoje,
+  totalGeral,
   ultimaPlaca,
   ultimoChassi,
   operadorNome,
@@ -48,6 +50,16 @@ export default function DashboardClient({
             <span className="text-slate-400 text-sm">Coletas Hoje</span>
           </div>
           <p className="text-4xl font-bold text-white">{totalHoje}</p>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 bg-purple-500/15 rounded-xl flex items-center justify-center">
+              <Database size={18} className="text-purple-400" />
+            </div>
+            <span className="text-slate-400 text-sm">Total no Sistema</span>
+          </div>
+          <p className="text-4xl font-bold text-white">{totalGeral}</p>
         </div>
 
         <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-5">

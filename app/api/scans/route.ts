@@ -28,14 +28,16 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const scans = await prisma.scan.findMany({
-    where,
-    include: { operador: { select: { nome: true, matricula: true } } },
-    orderBy: { createdAt: 'desc' },
-    take: 500,
-  });
+  const [scans, totalGeral] = await Promise.all([
+    prisma.scan.findMany({
+      where,
+      include: { operador: { select: { nome: true, matricula: true } } },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.scan.count(),
+  ]);
 
-  return NextResponse.json({ scans });
+  return NextResponse.json({ scans, totalGeral });
 }
 
 // POST /api/scans

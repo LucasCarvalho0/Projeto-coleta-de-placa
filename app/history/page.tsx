@@ -21,6 +21,7 @@ export default function HistoryPage() {
   const [scans, setScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [totalGeral, setTotalGeral] = useState<number | null>(null);
 
   // Filtros
   const [placa, setPlaca] = useState('');
@@ -43,6 +44,7 @@ export default function HistoryPage() {
       if (!res.ok) throw new Error('Erro ao buscar coletas');
       const data = await res.json();
       setScans(data.scans || []);
+      if (typeof data.totalGeral === 'number') setTotalGeral(data.totalGeral);
     } catch {
       toast.error('Erro ao carregar histórico.');
     } finally {
@@ -95,8 +97,8 @@ export default function HistoryPage() {
   function formatDateTime(iso: string) {
     const d = new Date(iso);
     return {
-      data: d.toLocaleDateString('pt-BR'),
-      hora: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      data: new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric' }).format(d),
+      hora: new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hour12: false }).format(d),
     };
   }
 
@@ -135,6 +137,28 @@ export default function HistoryPage() {
           <FileSpreadsheet size={16} />
           {exporting ? 'Exportando...' : 'Exportar Excel'}
         </button>
+      </div>
+
+      {/* Cards de totais */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-4 flex items-center gap-4">
+          <div className="w-10 h-10 bg-blue-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Filter size={18} className="text-blue-400" />
+          </div>
+          <div>
+            <p className="text-slate-400 text-xs mb-0.5">{hasFilters ? 'Registros no filtro' : 'Registros carregados'}</p>
+            <p className="text-2xl font-bold text-white">{loading ? '—' : scans.length}</p>
+          </div>
+        </div>
+        <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-4 flex items-center gap-4">
+          <div className="w-10 h-10 bg-purple-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
+            <History size={18} className="text-purple-400" />
+          </div>
+          <div>
+            <p className="text-slate-400 text-xs mb-0.5">Total geral no sistema</p>
+            <p className="text-2xl font-bold text-white">{totalGeral !== null ? totalGeral : '—'}</p>
+          </div>
+        </div>
       </div>
 
       {/* Filtros */}

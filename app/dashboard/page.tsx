@@ -10,7 +10,7 @@ export default async function DashboardPage() {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 
-  const [totalHoje, ultima] = await Promise.all([
+  const [totalHoje, ultima, totalGeral] = await Promise.all([
     prisma.scan.count({
       where: {
         operadorId: session.userId,
@@ -22,6 +22,7 @@ export default async function DashboardPage() {
       orderBy: { createdAt: 'desc' },
       include: { operador: true },
     }),
+    prisma.scan.count(),
   ]);
 
   const operador = await prisma.operator.findUnique({
@@ -31,6 +32,7 @@ export default async function DashboardPage() {
   return (
     <DashboardClient
       totalHoje={totalHoje}
+      totalGeral={totalGeral}
       ultimaPlaca={ultima?.placa ?? null}
       ultimoChassi={ultima?.chassi ?? null}
       operadorNome={operador?.nome ?? session.matricula}
