@@ -68,36 +68,46 @@ export function parserCRLV(input: string): ScanResult {
     return !chassiCandidate.match(/^[A-Z]{3}[0-9]/);
   };
 
-  // 2. Se a string tem exatamente 17 caracteres e começa com padrão de placa,
-  // tratamos como PLACA e extraímos os 7 caracteres iniciais.
-  if (cleanInput.length === 17 && !isRealChassi(cleanInput)) {
-    return { tipo: 'PLACA', placa: cleanInput.slice(0, 7) };
+  const res: ScanResult = { tipo: 'UNKNOWN' };
+  let chassiStr = cleanInput;
+
+  // Extrair Renavam (11 dígitos inteiros)
+  const matchRenavam = cleanInput.match(/\b\d{11}\b/);
+  if (matchRenavam) {
+    res.renavam = matchRenavam[0];
   }
 
-  // 3. Se a string contém um padrão de placa flexível (como TZF9G321490099252 ou TZF-9G32...)
-  // nós tratamos isso apenas como PLACA, ignorando o chassi parcial para evitar conflitos
-  const matchPlacaFlex = cleanInput.match(/[A-Z]{3}-?[0-9][A-Z0-9][0-9]{2}/);
+  // Extrair Placa flexível e removê-la para não interferir na busca do chassi
+  const matchPlacaFlex = cleanInput.match(/[A-Z]{3}[\s-]?[0-9][A-Z0-9][0-9]{2}/);
   if (matchPlacaFlex) {
-    return { tipo: 'PLACA', placa: matchPlacaFlex[0].replace('-', '') };
+    res.placa = matchPlacaFlex[0].replace(/[\s-]/g, '');
+    chassiStr = cleanInput.replace(matchPlacaFlex[0], ' ');
   }
 
-  // 5. Detect concatenated placa+chassi (e.g., plate followed by VIN)
-  if (cleanInput.length >= 24) {
-    const possiblePlaca = cleanInput.slice(0, 7);
-    const possibleChassi = cleanInput.slice(7, 24);
-    if (possiblePlaca.match(REGEX_PLACA) && isRealChassi(possibleChassi) && possibleChassi.match(REGEX_CHASSI)) {
-      return { tipo: 'AMBOS', placa: possiblePlaca, chassi: possibleChassi };
-    }
+  // Extrair Chassi nos caracteres restantes
+  const matchChassi = chassiStr.match(/[A-HJ-NPR-Z0-9]{17}/);
+  if (matchChassi && isRealChassi(matchChassi[0])) {
+    res.chassi = matchChassi[0];
   }
 
-  if (matchPlaca && matchChassi && isRealChassi(matchChassi[0])) {
-    return { tipo: 'AMBOS', placa: matchPlaca[0], chassi: matchChassi[0] };
+  // Fallback: Se não achou placa, mas a string tem 17 caracteres começando com padrão de placa
+  if (!res.placa && cleanInput.length === 17 && !isRealChassi(cleanInput)) {
+    res.placa = cleanInput.slice(0, 7);
   }
-  
-  if (matchPlaca) return { tipo: 'PLACA', placa: matchPlaca[0] };
-  if (matchChassi && isRealChassi(matchChassi[0])) return { tipo: 'CHASSI', chassi: matchChassi[0] };
-  
-  return { tipo: 'UNKNOWN' };
+
+  // Definir o tipo baseado no que foi encontrado
+  if (res.placa && res.chassi && res.renavam) {
+    res.tipo = 'CRLV';
+    res.marca = extractMarca(input);
+  } else if (res.placa && res.chassi) {
+    res.tipo = 'AMBOS';
+  } else if (res.placa) {
+    res.tipo = 'PLACA';
+  } else if (res.chassi) {
+    res.tipo = 'CHASSI';
+  }
+
+  return res;
 }
 
 /**

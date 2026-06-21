@@ -43,6 +43,18 @@ export function ScannerInput() {
     }
   }, [currentPlaca, currentChassi, currentRenavam, scanMode, isSaving]);
 
+  // Auto-submit para leitores que não enviam a tecla "Enter" no final
+  useEffect(() => {
+    if (!inputValue) return;
+    const timeoutId = setTimeout(() => {
+      const val = inputValue.trim().toUpperCase();
+      if (val.length >= 7) {
+        handleProcess(inputValue);
+      }
+    }, 400);
+    return () => clearTimeout(timeoutId);
+  }, [inputValue]);
+
   const saveScan = async () => {
     setIsSaving(true);
     try {

@@ -105,6 +105,19 @@ export default function EtiquetaPage() {
     }
   }, [currentPlaca, currentChassi, isSaving]);
 
+  // Auto-submit para leitores (incluindo QR Codes multi-linhas)
+  useEffect(() => {
+    if (!inputValue || inputValue.trim() === '') return;
+    const timeoutId = setTimeout(() => {
+      const val = inputValue.trim().toUpperCase();
+      // Se parou de digitar por 400ms e tem tamanho mínimo, tenta processar
+      if (val.length >= 7) {
+        handleProcess(val);
+      }
+    }, 400);
+    return () => clearTimeout(timeoutId);
+  }, [inputValue]);
+
   // Parser específico para Modo Etiqueta
 
   // Auto‑fetch missing placa when only VIN is known
@@ -134,29 +147,28 @@ export default function EtiquetaPage() {
       return !chassiCandidate.match(/^[A-Z]{3}[0-9]/);
     };
 
-    // 1. Se tem exatamente 17 caracteres e começa com padrão de placa,
-    // tratamos como PLACA e extraímos os 7 caracteres iniciais.
-    if (clean.length === 17 && !isRealChassi(clean)) {
-      return { placa: clean.slice(0, 7) };
-    }
-
-    // 2. Se a string contém um padrão de placa flexível (como TZF9G321490099252 ou TZF-9G32...)
-    // nós tratamos isso apenas como PLACA, ignorando o chassi parcial para evitar conflitos
-    const matchPlacaFlex = clean.match(/[A-Z]{3}-?[0-9][A-Z0-9][0-9]{2}/);
-    if (matchPlacaFlex) {
-      return { placa: matchPlacaFlex[0].replace('-', '') };
-    }
-
-    const matchPlaca = clean.match(REGEX_PLACA);
-    const matchChassi = clean.match(REGEX_CHASSI);
-
     const res: { placa?: string; chassi?: string } = {};
-    if (matchPlaca) {
-      res.placa = matchPlaca[0];
+    let chassiStr = clean;
+
+    // Procura por placa flexível (ABC1234, ABC-1234, ABC 1234, ABC1D23)
+    const matchPlacaFlex = clean.match(/[A-Z]{3}[\s-]?[0-9][A-Z0-9][0-9]{2}/);
+    if (matchPlacaFlex) {
+      res.placa = matchPlacaFlex[0].replace(/[\s-]/g, '');
+      // Remove a placa encontrada para não interferir na busca do chassi
+      chassiStr = clean.replace(matchPlacaFlex[0], ' ');
     }
+
+    // Procura por chassi válido nos caracteres restantes
+    const matchChassi = chassiStr.match(/[A-HJ-NPR-Z0-9]{17}/);
     if (matchChassi && isRealChassi(matchChassi[0])) {
       res.chassi = matchChassi[0];
     }
+
+    // Caso de fallback: string de 17 caracteres que inicia com placa (chassi parcial)
+    if (!res.placa && clean.length === 17 && !isRealChassi(clean)) {
+      res.placa = clean.slice(0, 7);
+    }
+
     return res;
   };
 
@@ -219,7 +231,9 @@ export default function EtiquetaPage() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleProcess(inputValue);
+      // Em vez de processar na hora, adicionamos um espaço para acumular leituras de QR Codes multi-linhas.
+      // O timeout de 400ms do useEffect vai processar a string inteira no final.
+      setInputValue(prev => prev + ' ');
     }
   };
 
