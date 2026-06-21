@@ -64,8 +64,8 @@ export async function GET(request: NextRequest) {
   scans.forEach((scan: any, i: number) => {
     const dt = new Date(scan.createdAt);
     const row = sheet.addRow({
-      data: dt.toLocaleDateString('pt-BR'),
-      hora: dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      data: new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric' }).format(dt),
+      hora: new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hour12: false }).format(dt),
       operador: scan.operador.nome,
       matricula: scan.operador.matricula,
       placa: scan.placa,

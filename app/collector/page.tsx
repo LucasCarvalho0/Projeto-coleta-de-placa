@@ -115,7 +115,7 @@ export default function CollectorPage() {
     }
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = useCallback(async () => {
     if (!parsedData) return;
     setLoading(true);
     try {
@@ -146,9 +146,21 @@ export default function CollectorPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [parsedData, handleCancel]);
 
 
+
+  // Suporte ao teclado: Enter ou Espaço confirma quando está no estado 'sucesso'
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (scanState === 'sucesso' && !loading && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        handleConfirm();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [scanState, loading, handleConfirm]);
 
   const handleManualSave = async () => {
     if (!manualPlaca || !manualChassi) {
