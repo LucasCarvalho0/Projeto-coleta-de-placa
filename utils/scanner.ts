@@ -46,27 +46,27 @@ export function extractMarca(texto: string): string | undefined {
 
 export function parserCRLV(input: string): ScanResult {
   const cleanInput = input.trim().toUpperCase();
-  
-  const matchPlaca = cleanInput.match(REGEX_PLACA);
-  const matchChassi = cleanInput.match(REGEX_CHASSI);
-  const matchRenavam = cleanInput.match(REGEX_RENAVAM);
-
-  // 1. Se tem todos os dados do CRLV, retorna CRLV
-  if (matchPlaca && matchChassi && matchRenavam) {
-    const marca = extractMarca(input);
-    return { 
-      tipo: 'CRLV', 
-      placa: matchPlaca[0], 
-      chassi: matchChassi[0],
-      renavam: matchRenavam[0],
-      marca
-    };
-  }
 
   // Helper para verificar se o chassi candidato é real (não começa com padrão de placa)
   const isRealChassi = (chassiCandidate: string): boolean => {
     return !chassiCandidate.match(/^[A-Z]{3}[0-9]/);
   };
+
+  // 1. Verificação rápida: se tem placa + chassi + renavam pelo regex estrito → retorna CRLV direto
+  const matchPlacaStrict = cleanInput.match(REGEX_PLACA);
+  const matchChassiStrict = cleanInput.match(REGEX_CHASSI);
+  const matchRenavamStrict = cleanInput.match(REGEX_RENAVAM);
+
+  if (matchPlacaStrict && matchChassiStrict && matchRenavamStrict) {
+    const marca = extractMarca(input);
+    return {
+      tipo: 'CRLV',
+      placa: matchPlacaStrict[0],
+      chassi: matchChassiStrict[0],
+      renavam: matchRenavamStrict[0],
+      marca
+    };
+  }
 
   const res: ScanResult = { tipo: 'UNKNOWN' };
   let chassiStr = cleanInput;
@@ -85,9 +85,9 @@ export function parserCRLV(input: string): ScanResult {
   }
 
   // Extrair Chassi nos caracteres restantes
-  const matchChassi = chassiStr.match(/[A-HJ-NPR-Z0-9]{17}/);
-  if (matchChassi && isRealChassi(matchChassi[0])) {
-    res.chassi = matchChassi[0];
+  const matchChassiRes = chassiStr.match(/[A-HJ-NPR-Z0-9]{17}/);
+  if (matchChassiRes && isRealChassi(matchChassiRes[0])) {
+    res.chassi = matchChassiRes[0];
   }
 
   // Fallback: Se não achou placa, mas a string tem 17 caracteres começando com padrão de placa
