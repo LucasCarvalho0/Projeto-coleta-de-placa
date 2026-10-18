@@ -119,8 +119,8 @@ export default function DashboardClient({
             <ScanBarcode size={28} className="text-red-400" />
           </div>
           <div>
-            <p className="font-semibold text-white text-lg">Código de Barras</p>
-            <p className="text-slate-400 text-sm">Coletor USB / Bluetooth</p>
+            <p className="font-semibold text-white text-lg">Contagem em Lote</p>
+            <p className="text-slate-400 text-sm">Bipagem contínua sem pausas (USB / BT)</p>
           </div>
         </Link>
 
